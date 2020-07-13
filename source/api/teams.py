@@ -1,7 +1,7 @@
 from core import app, config, session
 from os import path
 from bs4 import BeautifulSoup
-from flask import request
+from flask import request, make_response
 from source.static.static_methods import path_to_url
 import json
 from source.api.exceptions import *
@@ -41,6 +41,9 @@ def get_team_by_id(id):
 def get_top_teams_by_country(year, country, count):
     absolute_data = list()
 
+    resp = make_response()
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+
     try:
         if 1 > int(count) < 1000 or 2000 > int(year) > datetime.now().year:
             raise BaseException
@@ -68,14 +71,19 @@ def get_top_teams_by_country(year, country, count):
         data.append({'world_place': _[0].text, 'country_place': _[1].text, 'name': _[2].text, 'points': _[3].text,
                      'events': _[4].text})
 
-    return json.dumps({'count': len(absolute_data),
-                       'content': data
-                       })
+    resp.data = json.dumps({'count': len(absolute_data),
+                            'content': data
+                            })
+
+    return resp
 
 
 @app.route(path_to_url(path.join(teams_path, 'top', '<year>', '<count>')), methods=['GET'])
 def get_top_teams(year, count):
     absolute_data = list()
+
+    resp = make_response()
+    resp.headers["Access-Control-Allow-Origin"] = "*"
 
     try:
         if 1 > int(count) < 1000 or 2000 > int(year) > datetime.now().year:
@@ -110,15 +118,19 @@ def get_top_teams(year, count):
                          'points': _[2].text,
                          'events': _[3].text})
 
-    return json.dumps({'count': len(absolute_data),
+    resp.data = json.dumps({'count': len(absolute_data),
                        'content': data
                        })
+    return resp
 
 
 @app.route(path_to_url(path.join(teams_path, 'team', '<id>', '<type>')), methods=['GET'])
 def get_team(id, type):
     if type != 'name' and type != 'id':
         return IncorrectInput(ip=request.remote_addr, data=[id, type]).message('Type must be "name" or "id"')
+
+    resp = make_response()
+    resp.headers["Access-Control-Allow-Origin"] = "*"
 
     # Get CSRF token for the POST request
     soup = BeautifulSoup(session.get('https://ctftime.org/stats/2020/RU?page=1').text, 'html.parser')
@@ -136,7 +148,7 @@ def get_team(id, type):
 
     repl = session.post('https://ctftime.org/team/list/', {'csrfmiddlewaretoken': csrf, 'team_name': name})
 
-    if repl.url == 'https://ctftime.org/team/list/' :
+    if repl.url == 'https://ctftime.org/team/list/':
         return IncorrectInput(ip=request.remote_addr, data=[id, type]).message('Incorrect ' + type)
 
     soup = BeautifulSoup(
@@ -152,6 +164,6 @@ def get_team(id, type):
     data = get_team_by_id(id)
     data['country_place'] = country_place
 
-    return json.dumps(data)
+    resp.data = json.dumps(data)
 
-
+    return resp
