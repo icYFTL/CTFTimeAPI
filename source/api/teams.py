@@ -16,7 +16,7 @@ teams_path = path.join(config['url_prefix'], 'teams', 'get')
 async def get_teams_pages(count=50, year=2020, country=""):
     temp_data = list()
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
         loop = asyncio.get_event_loop()
         futures = [
             loop.run_in_executor(
@@ -135,8 +135,6 @@ def get_team(id, type):
     # Get CSRF token for the POST request
     soup = BeautifulSoup(session.get('https://ctftime.org/stats/2020/RU?page=1').text, 'html.parser')
     csrf = soup.find(attrs={"name": "csrfmiddlewaretoken"}).get('value')
-
-    name = None
 
     if type == 'id':
         try:
