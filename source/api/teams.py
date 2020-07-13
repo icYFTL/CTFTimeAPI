@@ -8,6 +8,7 @@ from source.api.exceptions import *
 import asyncio
 import concurrent.futures
 from datetime import datetime
+import re
 
 teams_path = path.join(config['url_prefix'], 'teams', 'get')
 
@@ -31,6 +32,11 @@ async def get_teams_pages(count=50, year=2020, country=""):
     return temp_data
 
 
+# Official method
+def get_team_by_id(id):
+    return json.loads(session.get(f'https://ctftime.org/api/v1/teams/{id}/').text)
+
+
 @app.route(path_to_url(path.join(teams_path, 'top', '<year>', '<country>', '<count>')), methods=['GET'])
 def get_top_teams_by_country(year, country, count):
     absolute_data = list()
@@ -40,7 +46,6 @@ def get_top_teams_by_country(year, country, count):
             raise BaseException
     except:
         return IncorrectInput(request.remote_addr, [year, country.upper(), count]).message()
-
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -108,3 +113,45 @@ def get_top_teams(year, count):
     return json.dumps({'count': len(absolute_data),
                        'content': data
                        })
+
+
+@app.route(path_to_url(path.join(teams_path, 'team', '<id>', '<type>')), methods=['GET'])
+def get_team(id, type):
+    if type != 'name' and type != 'id':
+        return IncorrectInput(ip=request.remote_addr, data=[id, type]).message('Type must be "name" or "id"')
+
+    # Get CSRF token for the POST request
+    soup = BeautifulSoup(session.get('https://ctftime.org/stats/2020/RU?page=1').text, 'html.parser')
+    csrf = soup.find(attrs={"name": "csrfmiddlewaretoken"}).get('value')
+
+    name = None
+
+    if type == 'id':
+        try:
+            name = get_team_by_id(id)['name']
+        except:
+            return IncorrectInput(ip=request.remote_addr, data=[id, type]).message('Incorrect ' + type)
+    else:
+        name = id
+
+    repl = session.post('https://ctftime.org/team/list/', {'csrfmiddlewaretoken': csrf, 'team_name': name})
+
+    if repl.url == 'https://ctftime.org/team/list/' :
+        return IncorrectInput(ip=request.remote_addr, data=[id, type]).message('Incorrect ' + type)
+
+    soup = BeautifulSoup(
+        repl.text,
+        'html.parser')
+
+    if type == 'name':
+        id = str(repl.url).replace('https://ctftime.org/team/', '')
+
+    # Current country place
+    country_place = soup.find('a', href=re.compile(r'/stats/[A-Z]+')).find(text=re.compile(r'[0-9]+'))
+
+    data = get_team_by_id(id)
+    data['contry_place'] = country_place
+
+    return json.dumps(data)
+
+
