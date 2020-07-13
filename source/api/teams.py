@@ -150,7 +150,7 @@ def get_team(id, type):
     country_place = soup.find('a', href=re.compile(r'/stats/[A-Z]+')).find(text=re.compile(r'[0-9]+'))
 
     data = get_team_by_id(id)
-    data['contry_place'] = country_place
+    data['country_place'] = country_place
 
     return json.dumps(data)
 
