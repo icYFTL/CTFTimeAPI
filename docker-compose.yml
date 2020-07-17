@@ -1,0 +1,10 @@
+version: "3"
+services:
+  server:
+    image: ctftimeapi
+    build: .
+    command: python3 Server.py
+    ports:
+      - 8014:8014
+    network_mode: host
+    container_name: ctftimeapi

@@ -1,3 +1,5 @@
 {
-  "url_prefix": "ctftime"
+  "url_prefix": "ctftime",
+  "port": 8014,
+  "debug": false
 }
