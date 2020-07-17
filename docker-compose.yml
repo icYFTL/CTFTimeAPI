@@ -3,7 +3,7 @@ services:
   server:
     image: ctftimeapi
     build: .
-    command: python3 Server.py
+    command: python3 CTFTimeAPI.py
     ports:
       - 8014:8014
     network_mode: host
