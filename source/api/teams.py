@@ -157,7 +157,10 @@ def get_team(id, type):
         id = str(repl.url).replace('https://ctftime.org/team/', '')
 
     # Current country place
-    country_place = soup.find('a', href=re.compile(r'/stats/[A-Z]+')).find(text=re.compile(r'[0-9]+'))
+    try:
+        country_place = soup.find('a', href=re.compile(r'/stats/[A-Z]+')).find(text=re.compile(r'[0-9]+'))
+    except:
+        country_place = -1
 
     data = get_team_by_id(id)
     data['country_place'] = country_place
